@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gomelab Dashboard</title>
+  <link href="/static/css/tailwind.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="container mx-auto mt-10">
+    <h1 class="text-4xl font-bold text-center mb-6">Gomelab Dashboard</h1>
+    
+    <!-- Cluster Selection -->
+    <div class="flex justify-center mb-6">
+      <button onclick="loadServices(0)" class="bg-blue-500 text-white px-4 py-2 rounded mx-2">Cluster 0</button>
+      <button onclick="loadServices(1)" class="bg-blue-500 text-white px-4 py-2 rounded mx-2">Cluster 1</button>
+    </div>
+
+    <!-- Services Grid -->
+    <div id="services-grid" class="grid grid-cols-3 gap-4">
+      <!-- Services will be dynamically inserted here -->
+    </div>
+  </div>
+
+  <script>
+    async function loadServices(clusterId) {
+      const response = await fetch(`/services?cluster=${clusterId}`);
+      const data = await response.json();
+      const servicesGrid = document.getElementById('services-grid');
+      servicesGrid.innerHTML = ''; // Clear existing services
+
+      if (data.services) {
+        data.services.forEach(service => {
+          const serviceCard = document.createElement('div');
+          serviceCard.className = 'bg-white p-4 shadow rounded';
+
+          // Prepare endpoint links
+          let endpoints = 'N/A';
+          if (service.endpoints && service.endpoints.length > 0) {
+            endpoints = service.endpoints
+              .map(ep => `<a href="http://${ep}" class="text-blue-500 underline" target="_blank">${ep}</a>`)
+              .join(', ');
+          }
+
+          // Render service card
+          serviceCard.innerHTML = `
+            <h2 class="text-lg font-bold">${service.name}</h2>
+            <p><strong>Namespace:</strong> ${service.namespace}</p>
+            <p><strong>Cluster IP:</strong> ${service.clusterIP || 'N/A'}</p>
+            <p><strong>Type:</strong> ${service.type || 'N/A'}</p>
+            <p><strong>Ports:</strong> ${
+              service.ports
+                ? service.ports.map(port => `${port.port}:${port.nodePort || 'N/A'}/TCP`).join(', ')
+                : 'N/A'
+            }</p>
+            <p><strong>Endpoints:</strong> ${endpoints}</p>
+          `;
+
+          servicesGrid.appendChild(serviceCard);
+        });
+      } else {
+        servicesGrid.innerHTML = '<p class="text-center text-gray-500">No services found.</p>';
+      }
+    }
+
+    // Load Cluster 0 by default
+    loadServices(0);
+  </script>
+</body>
+</html>
